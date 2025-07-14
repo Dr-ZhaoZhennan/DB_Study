@@ -1,3 +1,49 @@
+# 我的学习内容：
+## GDB做的事情
+1，随着程序启动，观察任何可能影响程序运行的内容
+2，按照自己的想法，让其在特定情况下停止
+3，程序停止之后，查看程序做了什么，当前是什么装填
+4，更改程序某些内容，正确错误互相修改，查看对于修改内容的相应。
+
+调试范围：本地程序，模拟器远程代码
+适配：win,linux,macos
+具体原理太复杂了，暂时先不看了。。。
+
+## 安装GDB
+### Linux系统：
+1，Ubuntu系统：
+```bash
+sudo apt install gdb
+```
+2,EulerOS/SUSE系统：
+```bash
+yum install gdb
+```
+3，Linux系统编译安装：
+安装地址：
+```html
+http://ftp/gnu.org/gnu/gdb
+```
+
+下载之后上传Linux解压：
+```bash
+tar -xvzf gdb-14.2.tar.gz
+```
+
+进入源码目录，配置GDB：cd gdb-14.2 &&./configure
+编译安装：make &&make install
+查看版本，验证安装：
+```bash
+gdb -v
+```
+
+## GDB实操代码
+1，GDB的启动推出和帮助
+2，如何设置和管理断点
+3，查改运行数据
+4，控制程序运行
+
+
 # 《GDB 调试从命令行到 VS Code：全面掌握程序调试》
 
 ### GDB 调试入门教程：从命令行到 VS Code 可视化调试&#xA;
