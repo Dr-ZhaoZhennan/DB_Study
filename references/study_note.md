@@ -346,8 +346,187 @@ $$选择度 = \frac{\text{满足条件的记录数}}{\text{表中总记录数}} 
 总记录=4条，选择度是0.75，所以基数也是3
 
 ### 4，代价计算
+先说结论：
+首先，我们将代价拆分成三个代价：
+$$Cost_{I/O}:磁盘I/O代价$$
+$$\mathrm{Cost_{CPU}:~CPU计算代价}$$
+$$Cost_Mem:内存占用代价$$
+我们可以计算总代价函数为：
+$$\mathrm{Cost_{Total}}=\cdot\mathrm{Cost_{I/O}}+\beta\cdot\mathrm{Cost_{CPU}}+\gamma\cdot\mathrm{Cost_{Mem}}$$
+其中，$\alpha,\beta,\gamma$表示系统定义的权重参数。
 
 
+具体的代价计算：
+#### I/O代价计算
+**假设我们有$n$张表格，分别记为：$R_{1},R_{2},\ldots,R_{n}$，每张表都有若干选择条件、连接操作。**
+**$$\mathrm{Cost}_{\mathrm{I/O}}=\sum_{i=1}^n\mathrm{I/O}_{\mathrm{select}}(R_i)+\sum_{j=1}^m\mathrm{I/O}_{\mathrm{join}}^{(j)}(R_j,S_j)$$
+
+
+---
+其中
+**$\sum_{i=1}^n\mathrm{I/O}_{\mathrm{select}}(R_i)$表示扫描+选择的I/O代价**
+<font size = 2 color = red>
+
+如果没有索引，$\mathrm{I/O}_{\mathrm{select}}(R_i)=T(R_i)$，$T(R_i)$表示表$R_i$的总记录数。在上述例子中，总记录数是4。（只考虑行数）
+如果已有索引，$\mathrm{I/O}_{\mathrm{select}}(R_i)=\mathrm{sel}(R_i)\cdot\log_B(T(R_i))$，其中$\mathrm{sel}(R_i)$表示表$R_i$上所有选择条件的选择度的乘积。
+
+</font>
+
+**$\sum_{j=1}^m\mathrm{I/O}_{\mathrm{join}}^{(j)}(R_j,S_j)$表示**
+
+---
+算了，直接参考GPT生成的结果吧，之后在例子中再具体进行计算
+
+很好，你现在已经具备了查询优化代价计算的基础，我们现在进一步推广到**多表（n张表）连接 + 多维限制（多个选择条件）+ 多种算子（连接类型）**的一般情形，并总结**更加一般化的代价计算公式**。
+
+---
+
+#### ✅ 场景设定（一般形式）
+
+假设有：
+
+* $n$ 张关系表：$R_1, R_2, \dots, R_n$
+* 每张表的元组数为 $T(R_i)$
+* 每个表可能有多个选择条件：$\sigma_{p_{i1}}, \sigma_{p_{i2}}, \dots$
+* 总共有 $m$ 个选择条件 $\{p_1, p_2, \dots, p_m\}$，每个选择条件 $p_j$ 有对应的选择度 $\text{sel}(p_j) \in (0,1]$
+* 有 $k$ 个连接操作（Join），每个连接操作使用特定连接算子（如嵌套循环、哈希连接、排序归并等）
+* 查询涉及投影（π）、排序（order by）、聚合（group by）、去重（distinct）等额外算子
+
+---
+
+#### 📐 定义符号（通用表示）
+
+| 符号                        | 含义                               |
+| ------------------------- | -------------------------------- |
+| $T(R)$                    | 表 $R$ 的记录数（元组数）                  |
+| $\text{sel}(p_j)$         | 谓词 $p_j$ 的选择度                    |
+| $T(\sigma_{p_j}(R))$      | 应用选择条件后的中间结果基数                   |
+| $J_i$                     | 第 $i$ 个连接操作                      |
+| $\text{Cost}_X$           | 操作 $X$ 的代价，可以是 I/O, CPU 或 Memory |
+| $\text{Join}_i(R_a, R_b)$ | 第 $i$ 个连接，连接关系 $R_a$ 和 $R_b$     |
+| $\text{sel}_{J_i}$        | 第 $i$ 个连接的连接选择度                  |
+
+---
+
+#### ✅ 一般形式的代价计算公式（按代价类型分类）
+
+---
+
+#### ① **磁盘 I/O 代价（Disk I/O Cost）**
+
+磁盘 I/O 主要包括：
+
+* **扫描代价**
+* **选择代价**
+* **连接代价**
+* **排序/聚合代价**
+
+**通用公式：**
+
+$$
+\text{I/O}_{\text{total}} = \sum_{i=1}^n \text{I/O}_{\text{scan}}(R_i) + \sum_{j=1}^m \text{I/O}_{\text{select}}(p_j) + \sum_{l=1}^k \text{I/O}_{\text{join}}(J_l) + \text{I/O}_{\text{extra}}
+$$
+
+* $\text{I/O}_{\text{scan}}(R_i) = T(R_i)$
+* $\text{I/O}_{\text{select}}(p_j) = \text{sel}(p_j) \cdot T(R_i)$
+* $\text{I/O}_{\text{join}}$：根据连接算法决定：
+
+  * **嵌套循环连接**：
+
+    $$
+    \text{I/O}_{\text{join}}(R, S) = T(R) \cdot T(S)
+    $$
+  * **哈希连接**：
+
+    $$
+    \text{I/O}_{\text{hash join}}(R, S) = T(R) + T(S)
+    $$
+  * **排序归并连接**（简化估计）：
+
+    $$
+    \text{I/O}_{\text{merge join}}(R, S) = T(R) \log T(R) + T(S) \log T(S)
+    $$
+* $\text{I/O}_{\text{extra}}$：包括排序、去重、聚合等操作
+
+---
+
+##### ② **CPU代价（CPU Cost）**
+
+CPU代价包括：
+
+* 谓词判断（选择）
+* 连接比较
+* 哈希函数计算（如果有）
+* 排序/聚合的计算
+
+**通用公式：**
+
+$$
+\text{CPU}_{\text{total}} = \sum_{j=1}^m T(\sigma_{p_j}(R)) + \sum_{l=1}^k \text{CPU}_{\text{join}}(J_l) + \text{CPU}_{\text{extra}}
+$$
+
+其中：
+
+* $T(\sigma_{p_j}(R)) = \text{sel}(p_j) \cdot T(R)$
+* $\text{CPU}_{\text{join}}$ 取决于连接算子：
+
+  * 嵌套循环连接：$T(R) \cdot T(S)$
+  * 哈希连接：$T(R) + T(S)$
+* $\text{CPU}_{\text{extra}}$：包括排序、group by 的计算次数，取决于数据分布
+
+---
+
+##### ③ **内存代价（Memory Cost）**
+
+内存代价主要指：
+
+* 缓冲区占用
+* 哈希表大小
+* 中间结果存储
+
+**通用公式：**
+
+$$
+\text{Mem}_{\text{total}} = \sum_{i=1}^n \text{Mem}_{\text{scan}}(R_i) + \sum_{l=1}^k \text{Mem}_{\text{join}}(J_l) + \text{Mem}_{\text{extra}}
+$$
+
+* 若一个表或中间结果放入内存，则：
+
+  $$
+  \text{Mem}_{\text{scan}}(R_i) = T(R_i)
+  $$
+* 对哈希连接：
+
+  $$
+  \text{Mem}_{\text{join}}(R, S) = \max(T(R), T(S)) \quad \text{（哈希表通常存放小表）}
+  $$
+
+---
+
+#### ✅ 组合总结：总代价的统一表达式
+
+如果我们统一用 $\text{Cost}_X$ 表示某类代价，则最终总代价可以统一为如下形式：
+
+$$
+\text{Cost}_{\text{total}} = \sum_{i=1}^n \text{Cost}_{\text{scan}}(R_i) + \sum_{j=1}^m \text{Cost}_{\text{select}}(p_j) + \sum_{l=1}^k \text{Cost}_{\text{join}}(J_l) + \text{Cost}_{\text{extra}}
+$$
+
+其中：
+
+* $\text{Cost}_{\text{scan}}(R_i) = T(R_i)$
+* $\text{Cost}_{\text{select}}(p_j) = \text{sel}(p_j) \cdot T(R_i)$
+* $\text{Cost}_{\text{join}}(J_l)$ 取决于连接算法
+* $\text{Cost}_{\text{extra}}$ 取决于是否有排序、聚合等操作
+
+---
+
+#### ✅ 小结（一句话理解）
+
+你可以理解为：
+
+> **查询总代价 = 各表扫描 + 筛选 + 各连接 + 额外操作** 的代价总和，每一部分都可以按表的大小、选择度、连接方式等用数学公式进行估算。
+
+如果你想，我可以帮你写一个 Python 程序，输入这些参数，自动估算这三种代价。也可以帮你把公式做成图表，方便记忆。要试试吗？
 
 
 
@@ -387,6 +566,9 @@ $$选择度 = \frac{\text{满足条件的记录数}}{\text{表中总记录数}} 
 
 
 
+
+
+
 ### 逻辑优化
 在搞清楚代价之后，我们就可以来进行优化操作了，优化的方向是降低代价。
 **逻辑优化降低的是IOcost和CPU cost。**
@@ -408,6 +590,7 @@ WHERE SC.Sno = Student.Sno AND Cno = '1';
 
 
 ### 物理优化
+
 
 
 
