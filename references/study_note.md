@@ -611,10 +611,3 @@ WHERE SC.Sno = Student.Sno AND Cno = '1';
 
 
 
-
-
-
-
-
-
-
